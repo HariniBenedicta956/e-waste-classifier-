@@ -30,7 +30,4 @@ Manual sorting of electronic waste is error-prone and labor-intensive. This mode
 ## 📁 How to Run
 1. Clone the repository
 2. Install requirements using `pip install -r requirements.txt`
-3. Run `main.py`
-
-## 📌 Note
-This project was developed as part of a 4-week AICTE internship and built to stand out in a competitive submission.
+3. Run `main.py
