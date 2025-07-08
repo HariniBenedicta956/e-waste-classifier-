@@ -1,0 +1,53 @@
+import tensorflow as tf
+from tensorflow.keras.applications import EfficientNetV2B0
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.preprocessing import image_dataset_from_directory
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import RandomFlip, RandomRotation, RandomZoom
+import matplotlib.pyplot as plt
+import os
+data_dir = "e-waste-dataset"
+img_size = (128, 128)
+batch_size = 32
+train_ds = image_dataset_from_directory(
+ data_dir,
+ validation_split=0.2,
+ subset="training",
+ seed=123,
+ image_size=img_size,
+ batch_size=batch_size,
+)
+val_ds = image_dataset_from_directory(
+ data_dir,
+ validation_split=0.2,
+ subset="validation",
+ seed=123,
+ image_size=img_size,
+ batch_size=batch_size,
+)
+AUTOTUNE = tf.data.AUTOTUNE
+train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
+data_augmentation = Sequential([
+ RandomFlip("horizontal_and_vertical"),
+ RandomRotation(0.2),
+ RandomZoom(0.1),
+])
+base_model = EfficientNetV2B0(include_top=False, input_shape=(128, 128, 3),
+weights="imagenet")
+base_model.trainable = False
+inputs = tf.keras.Input(shape=(128, 128, 3))
+x = data_augmentation(inputs)
+x = base_model(x, training=False)
+x = GlobalAveragePooling2D()(x)
+x = Dropout(0.2)(x)
+outputs = Dense(10, activation="softmax")(x)
+model = Model(inputs, outputs)
+model.compile(optimizer="adam",
+ loss="sparse_categorical_crossentropy",
+ metrics=["accuracy"])
+early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+history = model.fit(train_ds, validation_data=val_ds, epochs=10, callbacks=[early_stop])
+model.save("saved_model/efficientnetv2b0_e_waste")
